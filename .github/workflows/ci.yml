@@ -1,0 +1,85 @@
+# Name of the workflow — shows in GitHub UI
+name: ML Pipeline CI/CD
+
+# TRIGGER — when does this run?
+# on every push to main or dev branch
+# on every pull request to main
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+# JOBS — what to do when triggered
+jobs:
+
+  # JOB 1 — Run Tests
+  test:
+    # Runner — fresh Ubuntu Linux machine from GitHub
+    runs-on: ubuntu-latest
+
+    # STEPS — what to do on this machine
+    steps:
+
+      # Step 1 — checkout your code
+      # Downloads your repo onto the machine
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2 — install Python 3.9
+      # Same version as your Mac
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # Step 3 — install all libraries
+      # Same as running pip install on your Mac
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Step 4 — install pytest
+      - name: Install pytest
+        run: pip install pytest
+
+      # Step 5 — download the dataset
+      # The data folder is not on GitHub (too large)
+      # So we recreate it on the machine
+      - name: Download dataset
+        run: |
+          python -c "
+          import ssl
+          ssl._create_default_https_context = ssl._create_unverified_context
+          from sklearn.datasets import fetch_california_housing
+          import pandas as pd
+          data = fetch_california_housing(as_frame=True)
+          df = data.frame
+          df.to_csv('data/housing.csv', index=False)
+          print('Dataset ready')
+          "
+
+      # Step 6 — run all tests
+      # This is the most important step
+      # If any test fails → job fails → no deployment
+      - name: Run tests
+        run: pytest tests/ -v
+
+  # JOB 2 — Build Docker Image
+  # Only runs if tests pass
+  build:
+    # This job needs test job to finish first
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 1 — Build Docker image
+      # Same command you ran on your Mac
+      - name: Build Docker image
+        run: docker build -t house-price-api:latest .
+
+      # Step 2 — confirm image was built
+      - name: Verify Docker image
+        run: docker images house-price-api
