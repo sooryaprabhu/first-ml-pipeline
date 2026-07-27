@@ -10,6 +10,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    # Environment variables available to all steps
+    # ${{ secrets.APP_ENV }} pulls from GitHub secrets
+    # Never visible in logs — shows as ***
+    env:
+      APP_ENV: ${{ secrets.APP_ENV }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -22,8 +28,8 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Install pytest
-        run: pip install pytest
+      - name: Install pytest and flake8
+        run: pip install pytest flake8
 
       - name: Download dataset
         run: |
@@ -38,8 +44,19 @@ jobs:
           print('Dataset ready')
           "
 
+      # Code quality check
+      # Checks code style before running tests
+      # If code is messy → fail immediately
+      - name: Check code quality
+        run: flake8 src/ --max-line-length=100 --ignore=E501,W503
+
       - name: Run tests
         run: pytest tests/ -v
+
+      # Print the environment to confirm secret loaded
+      - name: Check environment
+        run: |
+          echo "Environment: $APP_ENV"
 
   build:
     needs: test
