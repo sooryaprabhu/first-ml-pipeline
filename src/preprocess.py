@@ -1,9 +1,9 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
+
 def preprocess_data(df):
-    # X = features (what the model learns FROM)
-    # y = target (what the model is trying to PREDICT)
+    # X = features, y = target
     X = df.drop(columns=["MedHouseVal"])
     y = df["MedHouseVal"]
 
@@ -16,8 +16,7 @@ def preprocess_data(df):
     else:
         X = X.fillna(X.median())
 
-    # Scale all features to the same range
-    # so no column dominates just because its numbers are bigger
+    # Scale all features to same range
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
     X_scaled = pd.DataFrame(X_scaled, columns=X.columns)
@@ -26,6 +25,7 @@ def preprocess_data(df):
     print(X_scaled.head())
 
     return X_scaled, y, scaler
+
 
 if __name__ == "__main__":
     from load_data import load_data

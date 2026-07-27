@@ -3,10 +3,12 @@ from pydantic import BaseModel
 import joblib
 import pandas as pd
 
+
 app = FastAPI(title="House Price Predictor API")
 
 model = joblib.load("models/house_price_model.pkl")
 scaler = joblib.load("models/scaler.pkl")
+
 
 class HouseFeatures(BaseModel):
     MedInc: float
@@ -18,9 +20,11 @@ class HouseFeatures(BaseModel):
     Latitude: float
     Longitude: float
 
+
 @app.get("/")
 def health_check():
     return {"status": "House Price Predictor API is running!"}
+
 
 @app.post("/predict")
 def predict_price(features: HouseFeatures):
